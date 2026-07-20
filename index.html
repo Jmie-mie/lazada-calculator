@@ -36,8 +36,13 @@
     label {
       display: block;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       margin: 16px 0 6px;
+      padding: 6px 10px;
+      background: #fff5ee;
+      border-left: 3px solid #f85606;
+      border-radius: 4px;
+      color: #222;
     }
     select, input[type="number"], .category-trigger {
       width: 100%;
@@ -52,6 +57,11 @@
       border-color: #f85606;
       background: #fff;
     }
+    input:disabled {
+      background: #eee;
+      color: #999;
+      cursor: not-allowed;
+    }
     .category-trigger {
       display: flex;
       align-items: center;
@@ -62,6 +72,8 @@
       appearance: none;
       text-align: left;
       font-family: inherit;
+      color: #222;
+      font-weight: 400;
     }
     .category-trigger::-moz-focus-inner { border: 0; padding: 0; }
     .category-trigger::after {
@@ -102,6 +114,16 @@
       border-bottom: 1px solid #e0e0e0;
     }
     .result-row:last-child { border-bottom: none; }
+    .result-row.subtotal-row {
+      border-top: 3px solid #0f146d;
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+    .result-row.profit-row {
+      border-top: 3px solid #0f146d;
+      margin-top: 4px;
+      padding-top: 12px;
+    }
     .result-label { font-size: 14px; color: #444; }
     .result-value {
       font-size: 16px;
@@ -120,6 +142,27 @@
       margin-top: 6px;
       font-size: 13px;
       color: #666;
+    }
+    .coins-section, .voucher-section {
+      margin-top: 16px;
+    }
+    .conditional-wrap {
+      margin-top: 12px;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      border-left: none;
+      padding: 0;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #f85606;
     }
 
     .category-overlay {
@@ -206,7 +249,7 @@
 
   <div class="container">
     <h1>Lazada Commission Calculator</h1>
-    <div class="subtitle">Stage 1 &mdash; Estimate your gross profit after Lazada commission (SST inclusive). Optional campaign price included.<br><small>v4 &ndash; 20 Jul 2026</small></div>
+    <div class="subtitle">Estimate your gross profit after Lazada commission, payment fee, and optional voucher/coins discounts.</div>
 
     <label for="cluster">Product Cluster</label>
     <select id="cluster">
@@ -229,17 +272,59 @@
       <option value="mall">Mall</option>
     </select>
 
-    <label for="price">Product Price (RM)</label>
+    <label for="price">Sales Price (RM)</label>
     <input type="number" id="price" placeholder="e.g. 100.00" min="0" step="0.01">
 
     <label for="campaignPrice">Campaign Price (RM) &mdash; optional</label>
     <input type="number" id="campaignPrice" placeholder="Leave blank if not joining campaign" min="0" step="0.01">
 
+    <div class="coins-section">
+      <label class="checkbox-label">
+        <input type="checkbox" id="coinsEnabled">
+        Apply Coins Discount
+      </label>
+      <div id="coinsInputWrap" style="display:none;">
+        <label for="coinsPercent">Coins Discount (%)</label>
+        <input type="number" id="coinsPercent" placeholder="1 - 20" min="1" max="20" step="0.01">
+      </div>
+    </div>
+
+    <div class="voucher-section">
+      <label class="checkbox-label">
+        <input type="checkbox" id="voucherEnabled">
+        Apply Voucher
+      </label>
+      <div id="voucherInputWrap" class="conditional-wrap" style="display:none;">
+        <label for="voucherType">Voucher Type</label>
+        <select id="voucherType">
+          <option value="">-- Select voucher type --</option>
+          <option value="money">Money Value Off</option>
+          <option value="percent">Percentage Discount Off</option>
+        </select>
+        <div id="voucherMoneyWrap" class="conditional-wrap" style="display:none;">
+          <label for="voucherMinSpend">Min Spend (RM)</label>
+          <input type="number" id="voucherMinSpend" placeholder="e.g. 50.00" min="0" step="0.01">
+          <label for="voucherMoneyOff">Discount (RM)</label>
+          <input type="number" id="voucherMoneyOff" placeholder="e.g. 10.00" min="0" step="0.01">
+        </div>
+        <div id="voucherPercentWrap" class="conditional-wrap" style="display:none;">
+          <label for="voucherPercentMinSpend">Min Spend (RM)</label>
+          <input type="number" id="voucherPercentMinSpend" placeholder="e.g. 50.00" min="0" step="0.01">
+          <label for="voucherPercent">Discount (%)</label>
+          <input type="number" id="voucherPercent" placeholder="e.g. 10" min="0" max="100" step="0.01">
+          <label for="voucherMaxCap">Max Capped Discount (RM)</label>
+          <input type="number" id="voucherMaxCap" placeholder="e.g. 5.00" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <div class="hint">Lazada payment fee: 2.78% will be deducted after commission.</div>
+
     <button id="calculate">Calculate</button>
 
     <div class="results" id="results">
-      <div class="result-row">
-        <span class="result-label">Product Price</span>
+      <div class="result-row" id="rowPrice">
+        <span class="result-label">Sales Price</span>
         <span class="result-value" id="resPrice"></span>
       </div>
       <div class="result-row" id="rowCampaign" style="display:none;">
@@ -250,6 +335,18 @@
         <span class="result-label">Campaign Discount</span>
         <span class="result-value" id="resDiscount"></span>
       </div>
+      <div class="result-row" id="rowVoucher" style="display:none;">
+        <span class="result-label" id="resVoucherLabel">Voucher Discount</span>
+        <span class="result-value" id="resVoucher"></span>
+      </div>
+      <div class="result-row" id="rowCoins" style="display:none;">
+        <span class="result-label">Coins Discount</span>
+        <span class="result-value" id="resCoins"></span>
+      </div>
+      <div class="result-row subtotal-row">
+        <span class="result-label">Subtotal (after discounts)</span>
+        <span class="result-value" id="resSubtotal"></span>
+      </div>
       <div class="result-row">
         <span class="result-label">Commission Rate</span>
         <span class="result-value" id="resRate"></span>
@@ -259,7 +356,11 @@
         <span class="result-value fee" id="resFee"></span>
       </div>
       <div class="result-row">
-        <span class="result-label">Gross Profit after Commission</span>
+        <span class="result-label">Payment Fee (2.78%)</span>
+        <span class="result-value fee" id="resPaymentFee"></span>
+      </div>
+      <div class="result-row profit-row">
+        <span class="result-label">Estimated Gross Profit</span>
         <span class="result-value profit" id="resProfit"></span>
       </div>
     </div>
@@ -291,10 +392,26 @@
     const sellerTypeSelect = document.getElementById('sellerType');
     const priceInput = document.getElementById('price');
     const campaignInput = document.getElementById('campaignPrice');
+    const coinsEnabledInput = document.getElementById('coinsEnabled');
+    const coinsPercentInput = document.getElementById('coinsPercent');
+    const coinsInputWrap = document.getElementById('coinsInputWrap');
+    const voucherEnabledInput = document.getElementById('voucherEnabled');
+    const voucherTypeSelect = document.getElementById('voucherType');
+    const voucherInputWrap = document.getElementById('voucherInputWrap');
+    const voucherMoneyWrap = document.getElementById('voucherMoneyWrap');
+    const voucherPercentWrap = document.getElementById('voucherPercentWrap');
+    const voucherMinSpendInput = document.getElementById('voucherMinSpend');
+    const voucherMoneyOffInput = document.getElementById('voucherMoneyOff');
+    const voucherPercentMinSpendInput = document.getElementById('voucherPercentMinSpend');
+    const voucherPercentInput = document.getElementById('voucherPercent');
+    const voucherMaxCapInput = document.getElementById('voucherMaxCap');
     const calculateBtn = document.getElementById('calculate');
     const results = document.getElementById('results');
+    const rowPrice = document.getElementById('rowPrice');
     const rowCampaign = document.getElementById('rowCampaign');
     const rowDiscount = document.getElementById('rowDiscount');
+    const rowVoucher = document.getElementById('rowVoucher');
+    const rowCoins = document.getElementById('rowCoins');
 
     let currentCategories = [];
 
@@ -390,26 +507,87 @@
       renderCategoryList(filtered, keyword);
     });
 
+    coinsEnabledInput.addEventListener('change', function() {
+      coinsInputWrap.style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) {
+        coinsPercentInput.value = '';
+      }
+    });
+
+    voucherEnabledInput.addEventListener('change', function() {
+      voucherInputWrap.style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) {
+        voucherTypeSelect.value = '';
+        voucherMinSpendInput.value = '';
+        voucherMoneyOffInput.value = '';
+        voucherPercentInput.value = '';
+        voucherMaxCapInput.value = '';
+        voucherMoneyWrap.style.display = 'none';
+        voucherPercentWrap.style.display = 'none';
+      }
+    });
+
+    voucherTypeSelect.addEventListener('change', function() {
+      voucherMoneyWrap.style.display = this.value === 'money' ? 'block' : 'none';
+      voucherPercentWrap.style.display = this.value === 'percent' ? 'block' : 'none';
+      if (this.value !== 'money') {
+        voucherMinSpendInput.value = '';
+        voucherMoneyOffInput.value = '';
+      }
+      if (this.value !== 'percent') {
+        voucherPercentMinSpendInput.value = '';
+        voucherPercentInput.value = '';
+        voucherMaxCapInput.value = '';
+      }
+    });
+
+    function togglePriceLock() {
+      if (priceInput.value.trim() !== '') {
+        campaignInput.disabled = true;
+        campaignInput.value = '';
+      } else {
+        campaignInput.disabled = false;
+      }
+      if (campaignInput.value.trim() !== '') {
+        priceInput.disabled = true;
+        priceInput.value = '';
+      } else {
+        priceInput.disabled = false;
+      }
+    }
+    priceInput.addEventListener('input', togglePriceLock);
+    campaignInput.addEventListener('input', togglePriceLock);
+
     calculateBtn.addEventListener('click', function() {
       const cluster = clusterSelect.value;
       const categoryName = categoryInput.value;
       const sellerType = sellerTypeSelect.value;
-      const price = parseFloat(priceInput.value);
+      const priceRaw = priceInput.value.trim();
       const campaignRaw = campaignInput.value.trim();
-      const campaignPrice = campaignRaw === '' ? null : parseFloat(campaignRaw);
+      const hasPrice = priceRaw !== '';
+      const hasCampaign = campaignRaw !== '';
+      const price = hasPrice ? parseFloat(priceRaw) : null;
+      const campaignPrice = hasCampaign ? parseFloat(campaignRaw) : null;
+      const coinsEnabled = coinsEnabledInput.checked;
+      const coinsPercent = coinsEnabled ? parseFloat(coinsPercentInput.value) : 0;
 
-      if (!cluster || !categoryName || isNaN(price) || price <= 0) {
-        alert('Please select cluster, category, and enter a valid product price.');
+      if (!cluster || !categoryName) {
+        alert('Please select a Product Cluster and Category.');
         return;
       }
 
-      if (campaignPrice !== null && (isNaN(campaignPrice) || campaignPrice < 0)) {
-        alert('Please enter a valid campaign price or leave it blank.');
+      if (!hasPrice && !hasCampaign) {
+        alert('Please enter a Sales Price or a Campaign Price.');
         return;
       }
 
-      if (campaignPrice !== null && campaignPrice > price) {
-        alert('Campaign price cannot be higher than product price.');
+      if ((hasPrice && (isNaN(price) || price <= 0)) || (hasCampaign && (isNaN(campaignPrice) || campaignPrice <= 0))) {
+        alert('Please enter a valid price greater than 0.');
+        return;
+      }
+
+      if (coinsEnabled && (isNaN(coinsPercent) || coinsPercent < 1 || coinsPercent > 20)) {
+        alert('Coins discount must be between 1% and 20%.');
         return;
       }
 
@@ -421,23 +599,94 @@
 
       const rate = sellerType === 'mall' ? item.mallSst : item.mpSst;
       const commissionBase = campaignPrice !== null ? campaignPrice : price;
-      const fee = commissionBase * rate;
-      const profit = commissionBase - fee;
 
-      document.getElementById('resPrice').textContent = formatMoney(price);
+      const coinsAmount = coinsEnabled ? commissionBase * (coinsPercent / 100) : 0;
+      const postCoinsBase = commissionBase - coinsAmount;
+
+      const voucherEnabled = voucherEnabledInput.checked;
+      const voucherType = voucherTypeSelect.value;
+      let voucherAmount = 0;
+      let voucherLabel = 'Voucher Discount';
+      if (voucherEnabled) {
+        if (!voucherType) {
+          alert('Please select a voucher type.');
+          return;
+        }
+        if (voucherType === 'money') {
+          const minSpend = parseFloat(voucherMinSpendInput.value);
+          const moneyOff = parseFloat(voucherMoneyOffInput.value);
+          if (isNaN(minSpend) || minSpend < 0 || isNaN(moneyOff) || moneyOff < 0) {
+            alert('Please enter valid min spend and voucher discount amounts.');
+            return;
+          }
+          if (moneyOff > minSpend) {
+            alert('Voucher discount cannot be greater than the min spend.');
+            return;
+          }
+          if (postCoinsBase >= minSpend) {
+            voucherAmount = Math.min(moneyOff, postCoinsBase);
+          } else {
+            voucherAmount = 0;
+            voucherLabel = 'Voucher Discount (min spend not met)';
+          }
+        } else if (voucherType === 'percent') {
+          const minSpend = parseFloat(voucherPercentMinSpendInput.value);
+          const percent = parseFloat(voucherPercentInput.value);
+          const maxCap = parseFloat(voucherMaxCapInput.value);
+          if (isNaN(minSpend) || minSpend < 0 || isNaN(percent) || percent <= 0 || percent > 100 || isNaN(maxCap) || maxCap < 0) {
+            alert('Please enter valid min spend, discount percentage (1-100), and max cap.');
+            return;
+          }
+          if (postCoinsBase >= minSpend) {
+            voucherAmount = Math.min(postCoinsBase * (percent / 100), maxCap, postCoinsBase);
+            voucherLabel = 'Voucher Discount (' + percent.toFixed(2) + '%)';
+          } else {
+            voucherAmount = 0;
+            voucherLabel = 'Voucher Discount (min spend not met)';
+          }
+        }
+      }
+
+      const netBase = postCoinsBase - voucherAmount;
+      if (netBase <= 0) {
+        alert('Total discounts cannot be equal to or greater than the selling price.');
+        return;
+      }
+      const fee = netBase * rate;
+      const paymentFee = netBase * 0.0278;
+      const profit = netBase - fee - paymentFee;
+
+      document.getElementById('resSubtotal').textContent = formatMoney(netBase);
       document.getElementById('resRate').textContent = formatPercent(rate);
       document.getElementById('resFee').textContent = formatMoney(fee);
+      document.getElementById('resPaymentFee').textContent = formatMoney(paymentFee);
       document.getElementById('resProfit').textContent = formatMoney(profit);
 
-      if (campaignPrice !== null) {
-        const discount = ((price - campaignPrice) / price) * 100;
-        document.getElementById('resCampaignPrice').textContent = formatMoney(campaignPrice);
-        document.getElementById('resDiscount').textContent = discount.toFixed(2) + '%';
-        rowCampaign.style.display = 'flex';
-        rowDiscount.style.display = 'flex';
-      } else {
+      if (hasPrice) {
+        document.getElementById('resPrice').textContent = formatMoney(price);
+        rowPrice.style.display = 'flex';
         rowCampaign.style.display = 'none';
         rowDiscount.style.display = 'none';
+      } else {
+        document.getElementById('resCampaignPrice').textContent = formatMoney(campaignPrice);
+        rowPrice.style.display = 'none';
+        rowCampaign.style.display = 'flex';
+        rowDiscount.style.display = 'none';
+      }
+
+      if (voucherEnabled) {
+        document.getElementById('resVoucherLabel').textContent = voucherLabel;
+        document.getElementById('resVoucher').textContent = formatMoney(voucherAmount);
+        rowVoucher.style.display = 'flex';
+      } else {
+        rowVoucher.style.display = 'none';
+      }
+
+      if (coinsEnabled) {
+        document.getElementById('resCoins').textContent = formatMoney(coinsAmount) + ' (' + coinsPercent.toFixed(2) + '%)';
+        rowCoins.style.display = 'flex';
+      } else {
+        rowCoins.style.display = 'none';
       }
 
       results.classList.add('show');
