@@ -1,0 +1,696 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Lazada Commission Calculator</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 16px;
+      color: #222;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 6px;
+      color: #0f146d;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 16px 0 6px;
+      padding: 6px 10px;
+      background: #fff5ee;
+      border-left: 3px solid #f85606;
+      border-radius: 4px;
+      color: #222;
+    }
+    select, input[type="number"], .category-trigger {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    select:focus, input:focus, .category-trigger:focus {
+      outline: none;
+      border-color: #f85606;
+      background: #fff;
+    }
+    input:disabled {
+      background: #eee;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .category-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      min-height: 46px;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: left;
+      font-family: inherit;
+      color: #222;
+      font-weight: 400;
+    }
+    .category-trigger::-moz-focus-inner { border: 0; padding: 0; }
+    .category-trigger::after {
+      content: "\25BC";
+      font-size: 11px;
+      color: #888;
+      margin-left: 8px;
+    }
+    .category-trigger.placeholder {
+      color: #777;
+    }
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: #f85606;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:active { background: #d64905; }
+    .results {
+      margin-top: 24px;
+      padding: 18px;
+      background: #f0f8ff;
+      border-radius: 10px;
+      display: none;
+    }
+    .results.show { display: block; }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row.subtotal-row {
+      border-top: 3px solid #0f146d;
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+    .result-row.profit-row {
+      border-top: 3px solid #0f146d;
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+    .result-label { font-size: 14px; color: #444; }
+    .result-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f146d;
+    }
+    .result-value.profit { color: #008000; }
+    .result-value.fee { color: #c00; }
+    .note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #888;
+      line-height: 1.5;
+    }
+    .hint {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+    .coins-section, .voucher-section {
+      margin-top: 16px;
+    }
+    .conditional-wrap {
+      margin-top: 12px;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      border-left: none;
+      padding: 0;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #f85606;
+    }
+
+    .category-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      height: -webkit-fill-available;
+      background: #fff;
+      z-index: 1000;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .category-overlay.show { display: flex; }
+    body.overlay-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+    .category-overlay-header {
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .category-overlay-header input {
+      flex: 1;
+      padding: 12px 14px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .category-overlay-header button {
+      width: auto;
+      margin: 0;
+      padding: 12px 16px;
+      background: #0f146d;
+    }
+    .category-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 8px 0;
+      touch-action: pan-y;
+    }
+    .category-item {
+      padding: 14px 16px;
+      font-size: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      touch-action: manipulation;
+    }
+    .category-item:active { background: #f5f5f5; }
+    .category-item.selected { background: #fff0e6; color: #f85606; font-weight: 600; }
+    .category-item.selected::after {
+      content: "\2713";
+      font-weight: 700;
+    }
+    .category-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <div style="background:#ffe0e0;color:#900;padding:16px;text-align:center;border-radius:8px;margin:16px;">
+      This calculator needs JavaScript to run. Please open it in a normal browser such as Safari or Chrome.
+    </div>
+  </noscript>
+
+  <div class="container">
+    <h1>Lazada Commission Calculator</h1>
+    <div class="subtitle">Estimate your gross profit after Lazada commission, payment fee, and optional voucher/coins discounts.</div>
+
+    <label for="cluster">Product Cluster</label>
+    <select id="cluster">
+      <option value="">-- Select cluster --</option>
+      <option value="EL">Electronics (EL)</option>
+      <option value="FA">Fashion (FA)</option>
+      <option value="GM">General Merchandise (GM)</option>
+      <option value="FMCG">FMCG</option>
+      <option value="DG">Digital Goods (DG)</option>
+    </select>
+
+    <label>Category</label>
+    <button type="button" class="category-trigger placeholder" id="categoryTrigger" onclick="openCategoryOverlay()">-- Select a cluster first --</button>
+    <input type="hidden" id="category" value="">
+    <div class="hint" id="categoryHint"></div>
+
+    <label for="sellerType">Seller Type</label>
+    <select id="sellerType">
+      <option value="mp">Marketplace</option>
+      <option value="mall">Mall</option>
+    </select>
+
+    <label for="price">Sales Price (RM)</label>
+    <input type="number" id="price" placeholder="e.g. 100.00" min="0" step="0.01">
+
+    <label for="campaignPrice">Campaign Price (RM) &mdash; optional</label>
+    <input type="number" id="campaignPrice" placeholder="Leave blank if not joining campaign" min="0" step="0.01">
+
+    <div class="coins-section">
+      <label class="checkbox-label">
+        <input type="checkbox" id="coinsEnabled">
+        Apply Coins Discount
+      </label>
+      <div id="coinsInputWrap" style="display:none;">
+        <label for="coinsPercent">Coins Discount (%)</label>
+        <input type="number" id="coinsPercent" placeholder="1 - 20" min="1" max="20" step="0.01">
+      </div>
+    </div>
+
+    <div class="voucher-section">
+      <label class="checkbox-label">
+        <input type="checkbox" id="voucherEnabled">
+        Apply Voucher
+      </label>
+      <div id="voucherInputWrap" class="conditional-wrap" style="display:none;">
+        <label for="voucherType">Voucher Type</label>
+        <select id="voucherType">
+          <option value="">-- Select voucher type --</option>
+          <option value="money">Money Value Off</option>
+          <option value="percent">Percentage Discount Off</option>
+        </select>
+        <div id="voucherMoneyWrap" class="conditional-wrap" style="display:none;">
+          <label for="voucherMinSpend">Min Spend (RM)</label>
+          <input type="number" id="voucherMinSpend" placeholder="e.g. 50.00" min="0" step="0.01">
+          <label for="voucherMoneyOff">Discount (RM)</label>
+          <input type="number" id="voucherMoneyOff" placeholder="e.g. 10.00" min="0" step="0.01">
+        </div>
+        <div id="voucherPercentWrap" class="conditional-wrap" style="display:none;">
+          <label for="voucherPercentMinSpend">Min Spend (RM)</label>
+          <input type="number" id="voucherPercentMinSpend" placeholder="e.g. 50.00" min="0" step="0.01">
+          <label for="voucherPercent">Discount (%)</label>
+          <input type="number" id="voucherPercent" placeholder="e.g. 10" min="0" max="100" step="0.01">
+          <label for="voucherMaxCap">Max Capped Discount (RM)</label>
+          <input type="number" id="voucherMaxCap" placeholder="e.g. 5.00" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <div class="hint">Lazada payment fee: 2.78% will be deducted after commission.</div>
+
+    <button id="calculate">Calculate</button>
+
+    <div class="results" id="results">
+      <div class="result-row" id="rowPrice">
+        <span class="result-label">Sales Price</span>
+        <span class="result-value" id="resPrice"></span>
+      </div>
+      <div class="result-row" id="rowCampaign" style="display:none;">
+        <span class="result-label">Campaign Price</span>
+        <span class="result-value" id="resCampaignPrice"></span>
+      </div>
+      <div class="result-row" id="rowDiscount" style="display:none;">
+        <span class="result-label">Campaign Discount</span>
+        <span class="result-value" id="resDiscount"></span>
+      </div>
+      <div class="result-row" id="rowVoucher" style="display:none;">
+        <span class="result-label" id="resVoucherLabel">Voucher Discount</span>
+        <span class="result-value" id="resVoucher"></span>
+      </div>
+      <div class="result-row" id="rowCoins" style="display:none;">
+        <span class="result-label">Coins Discount</span>
+        <span class="result-value" id="resCoins"></span>
+      </div>
+      <div class="result-row subtotal-row">
+        <span class="result-label">Subtotal (after discounts)</span>
+        <span class="result-value" id="resSubtotal"></span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Commission Rate</span>
+        <span class="result-value" id="resRate"></span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Commission Fee (incl. SST)</span>
+        <span class="result-value fee" id="resFee"></span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Payment Fee (2.78%)</span>
+        <span class="result-value fee" id="resPaymentFee"></span>
+      </div>
+      <div class="result-row profit-row">
+        <span class="result-label">Estimated Gross Profit</span>
+        <span class="result-value profit" id="resProfit"></span>
+      </div>
+    </div>
+
+    <div class="note">
+      This is an estimate for illustration only. Final deductions may include shipping fees, campaign discounts, coins, vouchers, payment fees, and other Lazada charges that will be added in later stages.
+    </div>
+  </div>
+
+  <div class="category-overlay" id="categoryOverlay">
+    <div class="category-overlay-header">
+      <input type="text" id="categoryOverlayFilter" placeholder="Search category..." autocomplete="off">
+      <button id="categoryOverlayClose">Done</button>
+    </div>
+    <div class="category-list" id="categoryList"></div>
+  </div>
+
+  <script>
+    const commissionData = [{"category":"Audio","cluster":"EL","mp":0.135,"mall":0.16,"mpSst":0.1458,"mallSst":0.1728},{"category":"Audio - Audio Equipment - AV Receivers \u0026 Amplifiers","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Audio - Audio Equipment - Microphones","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Audio - Headphones \u0026 Headsets","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Audio - Home Audio","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Audio - Portable Audio Players \u0026 Speakers","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Audio - Audio Equipment - Mixers, Controllers \u0026 Audio Interfaces","cluster":"EL","mp":0.15,"mall":0.175,"mpSst":0.162,"mallSst":0.189},{"category":"Computers \u0026 Components","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Computers \u0026 Components - Desktop Computers","cluster":"EL","mp":0.14,"mall":0.185,"mpSst":0.1512,"mallSst":0.1998},{"category":"Computers \u0026 Components - Laptops","cluster":"EL","mp":0.145,"mall":0.175,"mpSst":0.1566,"mallSst":0.189},{"category":"Computers \u0026 Components - Monitors","cluster":"EL","mp":0.155,"mall":0.2,"mpSst":0.1674,"mallSst":0.216},{"category":"Cameras \u0026 Drones","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Cameras \u0026 Drones - Cameras","cluster":"EL","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Cameras \u0026 Drones - Drones","cluster":"EL","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Cameras \u0026 Drones - Lenses","cluster":"EL","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Cameras \u0026 Drones - Surveillance Cameras \u0026 Systems","cluster":"EL","mp":0.145,"mall":0.165,"mpSst":0.1566,"mallSst":0.1782},{"category":"Data Storage","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Electronics Parts \u0026 Accessories ","cluster":"EL","mp":0.185,"mall":0.22,"mpSst":0.1998,"mallSst":0.2376},{"category":"Electronics Parts \u0026 Accessories - Audio Accessories - Remote Controls","cluster":"EL","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Electronics Parts \u0026 Accessories - Batteries","cluster":"EL","mp":0.175,"mall":0.19,"mpSst":0.189,"mallSst":0.2052},{"category":"Electronics Parts \u0026 Accessories - Camera Accessories","cluster":"EL","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Electronics Parts \u0026 Accessories - Camera Accessories - Lens Accessories","cluster":"EL","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Electronics Parts \u0026 Accessories - Drone Accessories","cluster":"EL","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Electronics Parts \u0026 Accessories - Home Appliances Parts \u0026 Accessories","cluster":"EL","mp":0.175,"mall":0.18,"mpSst":0.189,"mallSst":0.1944},{"category":"Electronics Parts \u0026 Accessories - Computer Accessories","cluster":"EL","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Electronics Parts \u0026 Accessories - Computer Accessories - Keyboard \u0026 Mouse","cluster":"EL","mp":0.155,"mall":0.19,"mpSst":0.1674,"mallSst":0.2052},{"category":"Electronics Parts \u0026 Accessories - Computer Accessories - Peripherals \u0026 Accessories","cluster":"EL","mp":0.165,"mall":0.195,"mpSst":0.1782,"mallSst":0.2106},{"category":"Electronics Parts \u0026 Accessories - Computer Accessories - Software","cluster":"EL","mp":0.14,"mall":0.165,"mpSst":0.1512,"mallSst":0.1782},{"category":"Electronics Parts \u0026 Accessories - Lighting \u0026 Studio Equipment","cluster":"EL","mp":0.17,"mall":0.205,"mpSst":0.1836,"mallSst":0.2214},{"category":"Electronics Parts \u0026 Accessories - Mobile \u0026 Tablet Accessories","cluster":"EL","mp":0.165,"mall":0.2,"mpSst":0.1782,"mallSst":0.216},{"category":"Electronics Parts \u0026 Accessories - Mobile \u0026 Tablet Accessories - SIM Tools","cluster":"EL","mp":0.165,"mall":0.2,"mpSst":0.1782,"mallSst":0.216},{"category":"Electronics Parts \u0026 Accessories - Batteries","cluster":"EL","mp":0.175,"mall":0.19,"mpSst":0.189,"mallSst":0.2052},{"category":"Electronics Parts \u0026 Accessories - Video Game Accessories","cluster":"EL","mp":0.165,"mall":0.2,"mpSst":0.1782,"mallSst":0.216},{"category":"Electronics Parts \u0026 Accessories - Network Components","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Gaming Devices \u0026 Software","cluster":"EL","mp":0.135,"mall":0.17,"mpSst":0.1458,"mallSst":0.1836},{"category":"Gaming Devices \u0026 Software - Console Games \u0026 Software","cluster":"EL","mp":0.14,"mall":0.175,"mpSst":0.1512,"mallSst":0.189},{"category":"Gaming Devices \u0026 Software - Handheld Consoles","cluster":"EL","mp":0.145,"mall":0.18,"mpSst":0.1566,"mallSst":0.1944},{"category":"Home Appliances","cluster":"EL","mp":0.14,"mall":0.17,"mpSst":0.1512,"mallSst":0.1836},{"category":"Home Appliances - Heating, Cooling and Ventilation / Household Cleaning / Personal Care Appliances","cluster":"EL","mp":0.16,"mall":0.19,"mpSst":0.1728,"mallSst":0.2052},{"category":"Home Appliances - Kitchen Appliances - Cooking Equipment / Microwaves, Ovens \u0026 Toasters / Refrigeration","cluster":"EL","mp":0.16,"mall":0.19,"mpSst":0.1728,"mallSst":0.2052},{"category":"Home Appliances - Kitchen Appliances","cluster":"EL","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Mobiles \u0026 Tablets","cluster":"EL","mp":0.125,"mall":0.16,"mpSst":0.135,"mallSst":0.1728},{"category":"Mobiles \u0026 Tablets - Smartphones","cluster":"EL","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Mobiles \u0026 Tablets - Tablets","cluster":"EL","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Mobiles \u0026 Tablets - Feature Phones","cluster":"EL","mp":0.135,"mall":0.17,"mpSst":0.1458,"mallSst":0.1836},{"category":"Printers \u0026 Scanners","cluster":"EL","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Smart Devices","cluster":"EL","mp":0.165,"mall":0.21,"mpSst":0.1782,"mallSst":0.2268},{"category":"Smart Devices - Electronic Cigarettes","cluster":"EL","mp":0.135,"mall":0.21,"mpSst":0.1458,"mallSst":0.2268},{"category":"Smart Devices - Smart Wearables","cluster":"EL","mp":0.13,"mall":0.165,"mpSst":0.1404,"mallSst":0.1782},{"category":"Televisions \u0026 Videos","cluster":"EL","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Televisions \u0026 Videos - Projectors","cluster":"EL","mp":0.15,"mall":0.18,"mpSst":0.162,"mallSst":0.1944},{"category":"Bags and Travel","cluster":"FA","mp":0.16,"mall":0.21,"mpSst":0.1728,"mallSst":0.2268},{"category":"Bags and Travel - Luggage \u0026 Travel Gear","cluster":"FA","mp":0.16,"mall":0.21,"mpSst":0.1728,"mallSst":0.2268},{"category":"Bags and Travel - Men Bags","cluster":"FA","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Bags and Travel - Women Bags","cluster":"FA","mp":0.17,"mall":0.215,"mpSst":0.1836,"mallSst":0.2322},{"category":"Fashion Accessories","cluster":"FA","mp":0.17,"mall":0.22,"mpSst":0.1836,"mallSst":0.2376},{"category":"Fashion Accessories - Minerals, Precious Metals and Gems","cluster":"FA","mp":0.17,"mall":0.185,"mpSst":0.1836,"mallSst":0.1998},{"category":"Fashion Accessories - Watches","cluster":"FA","mp":0.17,"mall":0.22,"mpSst":0.1836,"mallSst":0.2376},{"category":"Kids\u0027 Fashion","cluster":"FA","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Muslim Wear","cluster":"FA","mp":0.165,"mall":0.205,"mpSst":0.1782,"mallSst":0.2214},{"category":"Lingerie, Sleep, Lounge \u0026 Thermal Wear","cluster":"FA","mp":0.16,"mall":0.21,"mpSst":0.1728,"mallSst":0.2268},{"category":"Men\u0027s Clothing","cluster":"FA","mp":0.165,"mall":0.215,"mpSst":0.1782,"mallSst":0.2322},{"category":"Men\u0027s Shoes","cluster":"FA","mp":0.17,"mall":0.22,"mpSst":0.1836,"mallSst":0.2376},{"category":"Sports Shoes and Clothing","cluster":"FA","mp":0.16,"mall":0.21,"mpSst":0.1728,"mallSst":0.2268},{"category":"Women\u0027s Clothing","cluster":"FA","mp":0.165,"mall":0.205,"mpSst":0.1782,"mallSst":0.2214},{"category":"Women\u0027s Shoes","cluster":"FA","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Automotive - Cars","cluster":"GM","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Automotive - Automobiles","cluster":"GM","mp":0.16,"mall":0.2,"mpSst":0.1728,"mallSst":0.216},{"category":"Automotive - Car Care Equipment","cluster":"GM","mp":0.165,"mall":0.21,"mpSst":0.1782,"mallSst":0.2268},{"category":"Automotive - Exterior Accessories","cluster":"GM","mp":0.165,"mall":0.21,"mpSst":0.1782,"mallSst":0.2268},{"category":"Automotive - Interior Accessories","cluster":"GM","mp":0.165,"mall":0.21,"mpSst":0.1782,"mallSst":0.2268},{"category":"Automotive - Oils \u0026 Fluids","cluster":"GM","mp":0.16,"mall":0.2,"mpSst":0.1728,"mallSst":0.216},{"category":"Automotive - Parts \u0026 Spares","cluster":"GM","mp":0.155,"mall":0.2,"mpSst":0.1674,"mallSst":0.216},{"category":"Automotive - Tools \u0026 Equipment","cluster":"GM","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Automotive - Tires \u0026 Wheels","cluster":"GM","mp":0.185,"mall":0.21,"mpSst":0.1998,"mallSst":0.2268},{"category":"Automotive - Services","cluster":"GM","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Automotive - Safety \u0026 Security","cluster":"GM","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Automotive - Motorcycles","cluster":"GM","mp":0.17,"mall":0.205,"mpSst":0.1836,"mallSst":0.2214},{"category":"Automotive - Motorcycle Accessories","cluster":"GM","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Automotive - Riding Gear","cluster":"GM","mp":0.17,"mall":0.21,"mpSst":0.1836,"mallSst":0.2268},{"category":"Automotive - Moto Parts \u0026 Spares","cluster":"GM","mp":0.16,"mall":0.205,"mpSst":0.1728,"mallSst":0.2214},{"category":"Bedding \u0026 Bath","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Bedding \u0026 Bath - Bath","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Bedding \u0026 Bath - Bedding","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Furniture \u0026 Organization","cluster":"GM","mp":0.19,"mall":0.24,"mpSst":0.2052,"mallSst":0.2592},{"category":"Furniture \u0026 Organization - Furniture","cluster":"GM","mp":0.19,"mall":0.24,"mpSst":0.2052,"mallSst":0.2592},{"category":"Furniture \u0026 Organization - Storage \u0026 Organisation","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Kitchenware \u0026 Tableware","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Kitchenware \u0026 Tableware - Kitchenware","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Kitchenware \u0026 Tableware - Tableware","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Laundry \u0026 Cleaning Equipment","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor - Lighting","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor - Home Décor - Decor Artifacts","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor - Home Décor - Aromatherapy \u0026 Home Fragrance","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor - Home Décor - Beliefs \u0026 Religious Decoration","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Lighting \u0026 Décor - Home Décor - Decor Artifacts (Collectibles)","cluster":"GM","mp":0.185,"mall":0.235,"mpSst":0.1998,"mallSst":0.2538},{"category":"Lighting \u0026 Décor - Home Décor - Photo Albums, Frames \u0026 Accessories","cluster":"GM","mp":0.185,"mall":0.235,"mpSst":0.1998,"mallSst":0.2538},{"category":"Media, Music \u0026 Books","cluster":"GM","mp":0.185,"mall":0.225,"mpSst":0.1998,"mallSst":0.243},{"category":"Media, Music \u0026 Books - Books","cluster":"GM","mp":0.17,"mall":0.22,"mpSst":0.1836,"mallSst":0.2376},{"category":"Media, Music \u0026 Books - Magazines","cluster":"GM","mp":0.17,"mall":0.22,"mpSst":0.1836,"mallSst":0.2376},{"category":"Media, Music \u0026 Books - Musical Instruments","cluster":"GM","mp":0.175,"mall":0.225,"mpSst":0.189,"mallSst":0.243},{"category":"Media, Music \u0026 Books - Music","cluster":"GM","mp":0.185,"mall":0.225,"mpSst":0.1998,"mallSst":0.243},{"category":"Outdoor \u0026 Garden","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Outdoor \u0026 Garden - Gardening","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Sports \u0026 Outdoors Activities Equipment","cluster":"GM","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Sports \u0026 Outdoors Activities Equipment - Exercise \u0026 Fitness Equipment","cluster":"GM","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Sports \u0026 Outdoors Activities Equipment - Sports Accessories","cluster":"GM","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Sports \u0026 Outdoors Activities Equipment - Outdoor Sports \u0026 Activities Equipment","cluster":"GM","mp":0.185,"mall":0.225,"mpSst":0.1998,"mallSst":0.243},{"category":"Sports \u0026 Outdoors Activities Equipment - Water Sports Equipment","cluster":"GM","mp":0.175,"mall":0.22,"mpSst":0.189,"mallSst":0.2376},{"category":"Stationery, Craft \u0026 Gift Cards","cluster":"GM","mp":0.175,"mall":0.225,"mpSst":0.189,"mallSst":0.243},{"category":"Stationery, Craft \u0026 Gift Cards - Arts \u0026 Crafts","cluster":"GM","mp":0.175,"mall":0.225,"mpSst":0.189,"mallSst":0.243},{"category":"Stationery, Craft \u0026 Gift Cards - Gifts \u0026 Wrapping","cluster":"GM","mp":0.185,"mall":0.235,"mpSst":0.1998,"mallSst":0.2538},{"category":"Stationery, Craft \u0026 Gift Cards - Paper Products","cluster":"GM","mp":0.175,"mall":0.225,"mpSst":0.189,"mallSst":0.243},{"category":"Stationery, Craft \u0026 Gift Cards - School \u0026 Office","cluster":"GM","mp":0.175,"mall":0.225,"mpSst":0.189,"mallSst":0.243},{"category":"Stationery, Craft \u0026 Gift Cards - Sewing","cluster":"GM","mp":0.185,"mall":0.235,"mpSst":0.1998,"mallSst":0.2538},{"category":"Tools \u0026 Home Improvement","cluster":"GM","mp":0.18,"mall":0.23,"mpSst":0.1944,"mallSst":0.2484},{"category":"Tools \u0026 Home Improvement - Safety \u0026 Security","cluster":"GM","mp":0.17,"mall":0.225,"mpSst":0.1836,"mallSst":0.243},{"category":"Mother \u0026 Baby","cluster":"FMCG","mp":0.165,"mall":0.205,"mpSst":0.1782,"mallSst":0.2214},{"category":"Mother \u0026 Baby - Baby Detergent","cluster":"FMCG","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Mother \u0026 Baby - Baby Gear \u0026 Travel Essentials","cluster":"FMCG","mp":0.18,"mall":0.215,"mpSst":0.1944,"mallSst":0.2322},{"category":"Mother \u0026 Baby - Baby Safety","cluster":"FMCG","mp":0.18,"mall":0.215,"mpSst":0.1944,"mallSst":0.2322},{"category":"Mother \u0026 Baby - Hampers \u0026 Keepsakes","cluster":"FMCG","mp":0.165,"mall":0.215,"mpSst":0.1782,"mallSst":0.2322},{"category":"Mother \u0026 Baby - Feeding Essentials","cluster":"FMCG","mp":0.165,"mall":0.195,"mpSst":0.1782,"mallSst":0.2106},{"category":"Mother \u0026 Baby - Milk Formula \u0026 Baby Food","cluster":"FMCG","mp":0.165,"mall":0.195,"mpSst":0.1782,"mallSst":0.2106},{"category":"Mother \u0026 Baby - Nursery","cluster":"FMCG","mp":0.185,"mall":0.215,"mpSst":0.1998,"mallSst":0.2322},{"category":"Mother \u0026 Baby - Baby Health Care","cluster":"FMCG","mp":0.175,"mall":0.2,"mpSst":0.189,"mallSst":0.216},{"category":"Mother \u0026 Baby - Baby Personal Care","cluster":"FMCG","mp":0.175,"mall":0.205,"mpSst":0.189,"mallSst":0.2214},{"category":"Mother \u0026 Baby - Maternity Care \u0026 Postpartum","cluster":"FMCG","mp":0.175,"mall":0.2,"mpSst":0.189,"mallSst":0.216},{"category":"Mother \u0026 Baby - Diapering \u0026 Potty","cluster":"FMCG","mp":0.155,"mall":0.195,"mpSst":0.1674,"mallSst":0.2106},{"category":"Mother \u0026 Baby - Skin \u0026 Hair Care","cluster":"FMCG","mp":0.155,"mall":0.185,"mpSst":0.1674,"mallSst":0.1998},{"category":"Mother \u0026 Baby - Bottle Care \u0026 Cleaning / Bottle Storage Bags / Bottles / Breast Pumps \u0026 Breast Pump Accessories","cluster":"FMCG","mp":0.145,"mall":0.185,"mpSst":0.1566,"mallSst":0.1998},{"category":"Groceries","cluster":"FMCG","mp":0.19,"mall":0.225,"mpSst":0.2052,"mallSst":0.243},{"category":"Groceries - Alcoholic Beverages","cluster":"FMCG","mp":0.165,"mall":0.205,"mpSst":0.1782,"mallSst":0.2214},{"category":"Groceries - Snacks \u0026 Confectionery","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Groceries - Gift Set \u0026 Hampers","cluster":"FMCG","mp":0.19,"mall":0.215,"mpSst":0.2052,"mallSst":0.2322},{"category":"Groceries - Drinks","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Groceries - Drinks - UHT, Milk \u0026 Milk Powder","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Groceries - Drinks - Condensed Milk","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Dairy Chilled \u0026 Eggs","cluster":"FMCG","mp":0.19,"mall":0.215,"mpSst":0.2052,"mallSst":0.2322},{"category":"Groceries - Beancurd Skin","cluster":"FMCG","mp":0.17,"mall":0.195,"mpSst":0.1836,"mallSst":0.2106},{"category":"Groceries - Butter, Spreads \u0026 Margarine","cluster":"FMCG","mp":0.17,"mall":0.195,"mpSst":0.1836,"mallSst":0.2106},{"category":"Groceries - Fresh Cream","cluster":"FMCG","mp":0.17,"mall":0.195,"mpSst":0.1836,"mallSst":0.2106},{"category":"Groceries - Eggs","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Fresh Milk","cluster":"FMCG","mp":0.19,"mall":0.215,"mpSst":0.2052,"mallSst":0.2322},{"category":"Groceries - Cultured Milk","cluster":"FMCG","mp":0.19,"mall":0.215,"mpSst":0.2052,"mallSst":0.2322},{"category":"Groceries - Others","cluster":"FMCG","mp":0.19,"mall":0.215,"mpSst":0.2052,"mallSst":0.2322},{"category":"Groceries - Cakes \u0026 Desserts","cluster":"FMCG","mp":0.135,"mall":0.155,"mpSst":0.1458,"mallSst":0.1674},{"category":"Groceries - Cereals \u0026 Bars","cluster":"FMCG","mp":0.145,"mall":0.175,"mpSst":0.1566,"mallSst":0.189},{"category":"Groceries - Fresh Bread","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Pastry","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Others","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Food Staples \u0026 Cooking Essentials","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Canned Food","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Cooking Sauces, Condiments \u0026 Dressings","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Antipasti and Toppings","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Asian Pastes \u0026 Sauces","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Chilli sauce","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Herbs \u0026 Spices","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Soy Sauce","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Vinegar \u0026 Cooking Wine","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Pepper","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Salt","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Dried Goods","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Chinese Dried Goods","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Seaweed \u0026 Seafood","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Beans \u0026 Grains","cluster":"FMCG","mp":0,"mall":0.145,"mpSst":0,"mallSst":0.1566},{"category":"Groceries - Food Staples \u0026 Cooking Essentials - Home Baking \u0026 Sugar","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Baking Mixes","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Baking Needs","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Sugar \u0026 Sweeteners","cluster":"FMCG","mp":0.125,"mall":0.125,"mpSst":0.135,"mallSst":0.135},{"category":"Groceries - Artificial Sweeteners","cluster":"FMCG","mp":0.125,"mall":0.125,"mpSst":0.135,"mallSst":0.135},{"category":"Groceries - Sugar","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Flour","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Instant \u0026 Ready to Eat","cluster":"FMCG","mp":0.125,"mall":0.155,"mpSst":0.135,"mallSst":0.1674},{"category":"Groceries - Pasta","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Instant Noodles","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Rice","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Oil","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Frozen","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Ready-to-Eat Meals","cluster":"FMCG","mp":0.145,"mall":0.175,"mpSst":0.1566,"mallSst":0.189},{"category":"Groceries - Frozen Fruits","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Frozen Seafood","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Vegetarian Meat \u0026 Seafood","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Vegetarian Meat","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Frozen Meat","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Beef","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Lamb","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Pork","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Chicken \u0026 Poultry","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Groceries - Ice Cream","cluster":"FMCG","mp":0.135,"mall":0.165,"mpSst":0.1458,"mallSst":0.1782},{"category":"Groceries - Fruit \u0026 Vegetables","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Fresh Salads \u0026 Herbs","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Broccoli \u0026 Cauliflower","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Cabbage \u0026 Brussel Sprouts","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Leafy Vegetables","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Mushrooms","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Peas, Beans \u0026 Sweetcorn","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Stalks \u0026 Gourds","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Tomatoes \u0026 Peppers","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Root Vegetables","cluster":"FMCG","mp":0.115,"mall":0.145,"mpSst":0.1242,"mallSst":0.1566},{"category":"Groceries - Garlic, Ginger \u0026 Onion","cluster":"FMCG","mp":0,"mall":0.11,"mpSst":0,"mallSst":0.1188},{"category":"Beauty","cluster":"FMCG","mp":0.195,"mall":0.24,"mpSst":0.2106,"mallSst":0.2592},{"category":"Beauty - Beauty Tools","cluster":"FMCG","mp":0.195,"mall":0.24,"mpSst":0.2106,"mallSst":0.2592},{"category":"Beauty - Fragrances","cluster":"FMCG","mp":0.195,"mall":0.24,"mpSst":0.2106,"mallSst":0.2592},{"category":"Beauty - Makeup","cluster":"FMCG","mp":0.195,"mall":0.24,"mpSst":0.2106,"mallSst":0.2592},{"category":"Beauty - Men\u0027s Care","cluster":"FMCG","mp":0.195,"mall":0.24,"mpSst":0.2106,"mallSst":0.2592},{"category":"Beauty - Personal Care","cluster":"FMCG","mp":0.19,"mall":0.23,"mpSst":0.2052,"mallSst":0.2484},{"category":"Beauty - Bath \u0026 Body","cluster":"FMCG","mp":0.19,"mall":0.235,"mpSst":0.2052,"mallSst":0.2538},{"category":"Beauty - Foot Care","cluster":"FMCG","mp":0.185,"mall":0.23,"mpSst":0.1998,"mallSst":0.2484},{"category":"Beauty - Hair Care","cluster":"FMCG","mp":0.19,"mall":0.235,"mpSst":0.2052,"mallSst":0.2538},{"category":"Beauty - Sanitary Napkins \u0026 Panty Liners","cluster":"FMCG","mp":0.17,"mall":0.215,"mpSst":0.1836,"mallSst":0.2322},{"category":"Beauty - Toothbrushes","cluster":"FMCG","mp":0.17,"mall":0.215,"mpSst":0.1836,"mallSst":0.2322},{"category":"Beauty - Toothpaste","cluster":"FMCG","mp":0.17,"mall":0.215,"mpSst":0.1836,"mallSst":0.2322},{"category":"Beauty - Others","cluster":"FMCG","mp":0.19,"mall":0.235,"mpSst":0.2052,"mallSst":0.2538},{"category":"Beauty - Skin Care","cluster":"FMCG","mp":0.195,"mall":0.235,"mpSst":0.2106,"mallSst":0.2538},{"category":"Health","cluster":"FMCG","mp":0.195,"mall":0.225,"mpSst":0.2106,"mallSst":0.243},{"category":"Health - Food Supplement","cluster":"FMCG","mp":0.195,"mall":0.235,"mpSst":0.2106,"mallSst":0.2538},{"category":"Health - Medical Supplies","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Health - First Aid Supplies (excluding Ointments \u0026 Creams)","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Health - Over The Counter Medicine","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Health - Pain Relief \u0026 Fever","cluster":"FMCG","mp":0.175,"mall":0.215,"mpSst":0.189,"mallSst":0.2322},{"category":"Health - Ointments \u0026 Creams","cluster":"FMCG","mp":0.195,"mall":0.235,"mpSst":0.2106,"mallSst":0.2538},{"category":"Health - Others","cluster":"FMCG","mp":0.195,"mall":0.235,"mpSst":0.2106,"mallSst":0.2538},{"category":"Health - Sexual Wellness","cluster":"FMCG","mp":0.195,"mall":0.235,"mpSst":0.2106,"mallSst":0.2538},{"category":"Household Supplies","cluster":"FMCG","mp":0.17,"mall":0.235,"mpSst":0.1836,"mallSst":0.2538},{"category":"Pet Supplies","cluster":"FMCG","mp":0.175,"mall":0.205,"mpSst":0.189,"mallSst":0.2214},{"category":"Pet Supplies - Pet Accessories","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Pet Supplies - Clothing, Shoes \u0026 Accessories","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Pet Supplies - Grooming","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Pet Supplies - Litter \u0026 Housebreaking","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Pet Supplies - Pet Food","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Pet Supplies - Pet Healthcare","cluster":"FMCG","mp":0.18,"mall":0.22,"mpSst":0.1944,"mallSst":0.2376},{"category":"Toys \u0026 Games","cluster":"FMCG","mp":0.175,"mall":0.21,"mpSst":0.189,"mallSst":0.2268},{"category":"Digital Goods","cluster":"DG","mp":0.225,"mall":0.06,"mpSst":0.243,"mallSst":0.0648},{"category":"Digital Goods - Digital Games and Software","cluster":"DG","mp":0.225,"mall":0.045,"mpSst":0.243,"mallSst":0.0486},{"category":"Digital Goods - Beauty and Wellness","cluster":"DG","mp":0.225,"mall":0.03,"mpSst":0.243,"mallSst":0.0324},{"category":"Digital Goods - Food and Beverages","cluster":"DG","mp":0.225,"mall":0.025,"mpSst":0.243,"mallSst":0.027},{"category":"Digital Goods - Home","cluster":"DG","mp":0.225,"mall":0.03,"mpSst":0.243,"mallSst":0.0324},{"category":"Digital Goods - Event Ticketing","cluster":"DG","mp":0.225,"mall":0.06,"mpSst":0.243,"mallSst":0.0648},{"category":"Digital Goods - Lazada Gift Cards","cluster":"DG","mp":0.225,"mall":0.06,"mpSst":0.243,"mallSst":0.0648},{"category":"Digital Goods - Travel","cluster":"DG","mp":0.225,"mall":0.06,"mpSst":0.243,"mallSst":0.0648},{"category":"Digital Goods - Attraction Booking","cluster":"DG","mp":0.225,"mall":0.06,"mpSst":0.243,"mallSst":0.0648},{"category":"Digital Utilities","cluster":"DG","mp":0.225,"mall":0.15,"mpSst":0.243,"mallSst":0.162},{"category":"Digital Utilities - Telecom Bill","cluster":"DG","mp":0.225,"mall":0.15,"mpSst":0.243,"mallSst":0.162},{"category":"Special Digital Product","cluster":"DG","mp":0.225,"mall":0.16,"mpSst":0.243,"mallSst":0.1728}];
+
+    const clusterSelect = document.getElementById('cluster');
+    const categoryInput = document.getElementById('category');
+    const categoryTrigger = document.getElementById('categoryTrigger');
+    const categoryHint = document.getElementById('categoryHint');
+    const categoryOverlay = document.getElementById('categoryOverlay');
+    const categoryOverlayFilter = document.getElementById('categoryOverlayFilter');
+    const categoryOverlayClose = document.getElementById('categoryOverlayClose');
+    const categoryList = document.getElementById('categoryList');
+    const sellerTypeSelect = document.getElementById('sellerType');
+    const priceInput = document.getElementById('price');
+    const campaignInput = document.getElementById('campaignPrice');
+    const coinsEnabledInput = document.getElementById('coinsEnabled');
+    const coinsPercentInput = document.getElementById('coinsPercent');
+    const coinsInputWrap = document.getElementById('coinsInputWrap');
+    const voucherEnabledInput = document.getElementById('voucherEnabled');
+    const voucherTypeSelect = document.getElementById('voucherType');
+    const voucherInputWrap = document.getElementById('voucherInputWrap');
+    const voucherMoneyWrap = document.getElementById('voucherMoneyWrap');
+    const voucherPercentWrap = document.getElementById('voucherPercentWrap');
+    const voucherMinSpendInput = document.getElementById('voucherMinSpend');
+    const voucherMoneyOffInput = document.getElementById('voucherMoneyOff');
+    const voucherPercentMinSpendInput = document.getElementById('voucherPercentMinSpend');
+    const voucherPercentInput = document.getElementById('voucherPercent');
+    const voucherMaxCapInput = document.getElementById('voucherMaxCap');
+    const calculateBtn = document.getElementById('calculate');
+    const results = document.getElementById('results');
+    const rowPrice = document.getElementById('rowPrice');
+    const rowCampaign = document.getElementById('rowCampaign');
+    const rowDiscount = document.getElementById('rowDiscount');
+    const rowVoucher = document.getElementById('rowVoucher');
+    const rowCoins = document.getElementById('rowCoins');
+
+    let currentCategories = [];
+
+    function formatMoney(amount) {
+      return 'RM ' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function formatPercent(rate) {
+      return (rate * 100).toFixed(2) + '%';
+    }
+
+    function renderCategoryList(categories, keyword) {
+      categoryList.innerHTML = '';
+      if (categories.length === 0) {
+        categoryList.innerHTML = '<div class="category-empty">No categories match your search</div>';
+        return;
+      }
+      categories.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'category-item';
+        if (item.category === categoryInput.value) {
+          div.classList.add('selected');
+        }
+        div.textContent = item.category;
+        div.addEventListener('click', function() {
+          selectCategory(item.category);
+        });
+        categoryList.appendChild(div);
+      });
+    }
+
+    function selectCategory(categoryName) {
+      categoryInput.value = categoryName;
+      categoryTrigger.textContent = categoryName;
+      categoryTrigger.classList.remove('placeholder');
+      closeCategoryOverlay();
+      renderCategoryList(currentCategories, categoryOverlayFilter.value.trim().toLowerCase());
+    }
+
+    function openCategoryOverlay() {
+      if (!clusterSelect.value) {
+        alert('Please select a Product Cluster first.');
+        return;
+      }
+      document.body.classList.add('overlay-open');
+      categoryOverlay.classList.add('show');
+      categoryOverlayFilter.value = '';
+      renderCategoryList(currentCategories, '');
+    }
+
+    function closeCategoryOverlay() {
+      document.body.classList.remove('overlay-open');
+      categoryOverlay.classList.remove('show');
+    }
+
+    clusterSelect.addEventListener('change', function() {
+      const cluster = this.value;
+      results.classList.remove('show');
+      categoryInput.value = '';
+      categoryTrigger.textContent = '-- Select category --';
+      categoryTrigger.classList.add('placeholder');
+
+      if (!cluster) {
+        currentCategories = [];
+        categoryTrigger.textContent = '-- Select a cluster first --';
+        categoryHint.textContent = '';
+        return;
+      }
+
+      currentCategories = commissionData
+        .filter(item => item.cluster === cluster)
+        .sort((a, b) => a.category.localeCompare(b.category));
+
+      categoryTrigger.textContent = '-- Select category --';
+      categoryHint.textContent = currentCategories.length + ' categories available';
+    });
+
+    categoryTrigger.addEventListener('click', openCategoryOverlay);
+    categoryTrigger.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openCategoryOverlay();
+      }
+    });
+
+    categoryOverlayClose.addEventListener('click', closeCategoryOverlay);
+
+    categoryOverlayFilter.addEventListener('input', function() {
+      const keyword = this.value.trim().toLowerCase();
+      const filtered = currentCategories.filter(item =>
+        item.category.toLowerCase().includes(keyword)
+      );
+      renderCategoryList(filtered, keyword);
+    });
+
+    coinsEnabledInput.addEventListener('change', function() {
+      coinsInputWrap.style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) {
+        coinsPercentInput.value = '';
+      }
+    });
+
+    voucherEnabledInput.addEventListener('change', function() {
+      voucherInputWrap.style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) {
+        voucherTypeSelect.value = '';
+        voucherMinSpendInput.value = '';
+        voucherMoneyOffInput.value = '';
+        voucherPercentInput.value = '';
+        voucherMaxCapInput.value = '';
+        voucherMoneyWrap.style.display = 'none';
+        voucherPercentWrap.style.display = 'none';
+      }
+    });
+
+    voucherTypeSelect.addEventListener('change', function() {
+      voucherMoneyWrap.style.display = this.value === 'money' ? 'block' : 'none';
+      voucherPercentWrap.style.display = this.value === 'percent' ? 'block' : 'none';
+      if (this.value !== 'money') {
+        voucherMinSpendInput.value = '';
+        voucherMoneyOffInput.value = '';
+      }
+      if (this.value !== 'percent') {
+        voucherPercentMinSpendInput.value = '';
+        voucherPercentInput.value = '';
+        voucherMaxCapInput.value = '';
+      }
+    });
+
+    function togglePriceLock() {
+      if (priceInput.value.trim() !== '') {
+        campaignInput.disabled = true;
+        campaignInput.value = '';
+      } else {
+        campaignInput.disabled = false;
+      }
+      if (campaignInput.value.trim() !== '') {
+        priceInput.disabled = true;
+        priceInput.value = '';
+      } else {
+        priceInput.disabled = false;
+      }
+    }
+    priceInput.addEventListener('input', togglePriceLock);
+    campaignInput.addEventListener('input', togglePriceLock);
+
+    calculateBtn.addEventListener('click', function() {
+      const cluster = clusterSelect.value;
+      const categoryName = categoryInput.value;
+      const sellerType = sellerTypeSelect.value;
+      const priceRaw = priceInput.value.trim();
+      const campaignRaw = campaignInput.value.trim();
+      const hasPrice = priceRaw !== '';
+      const hasCampaign = campaignRaw !== '';
+      const price = hasPrice ? parseFloat(priceRaw) : null;
+      const campaignPrice = hasCampaign ? parseFloat(campaignRaw) : null;
+      const coinsEnabled = coinsEnabledInput.checked;
+      const coinsPercent = coinsEnabled ? parseFloat(coinsPercentInput.value) : 0;
+
+      if (!cluster || !categoryName) {
+        alert('Please select a Product Cluster and Category.');
+        return;
+      }
+
+      if (!hasPrice && !hasCampaign) {
+        alert('Please enter a Sales Price or a Campaign Price.');
+        return;
+      }
+
+      if ((hasPrice && (isNaN(price) || price <= 0)) || (hasCampaign && (isNaN(campaignPrice) || campaignPrice <= 0))) {
+        alert('Please enter a valid price greater than 0.');
+        return;
+      }
+
+      if (coinsEnabled && (isNaN(coinsPercent) || coinsPercent < 1 || coinsPercent > 20)) {
+        alert('Coins discount must be between 1% and 20%.');
+        return;
+      }
+
+      const item = commissionData.find(i => i.cluster === cluster && i.category === categoryName);
+      if (!item) {
+        alert('Category not found. Please reselect.');
+        return;
+      }
+
+      const rate = sellerType === 'mall' ? item.mallSst : item.mpSst;
+      const commissionBase = campaignPrice !== null ? campaignPrice : price;
+
+      const coinsAmount = coinsEnabled ? commissionBase * (coinsPercent / 100) : 0;
+      const postCoinsBase = commissionBase - coinsAmount;
+
+      const voucherEnabled = voucherEnabledInput.checked;
+      const voucherType = voucherTypeSelect.value;
+      let voucherAmount = 0;
+      let voucherLabel = 'Voucher Discount';
+      if (voucherEnabled) {
+        if (!voucherType) {
+          alert('Please select a voucher type.');
+          return;
+        }
+        if (voucherType === 'money') {
+          const minSpend = parseFloat(voucherMinSpendInput.value);
+          const moneyOff = parseFloat(voucherMoneyOffInput.value);
+          if (isNaN(minSpend) || minSpend < 0 || isNaN(moneyOff) || moneyOff < 0) {
+            alert('Please enter valid min spend and voucher discount amounts.');
+            return;
+          }
+          if (moneyOff > minSpend) {
+            alert('Voucher discount cannot be greater than the min spend.');
+            return;
+          }
+          if (postCoinsBase >= minSpend) {
+            voucherAmount = Math.min(moneyOff, postCoinsBase);
+          } else {
+            voucherAmount = 0;
+            voucherLabel = 'Voucher Discount (min spend not met)';
+          }
+        } else if (voucherType === 'percent') {
+          const minSpend = parseFloat(voucherPercentMinSpendInput.value);
+          const percent = parseFloat(voucherPercentInput.value);
+          const maxCap = parseFloat(voucherMaxCapInput.value);
+          if (isNaN(minSpend) || minSpend < 0 || isNaN(percent) || percent <= 0 || percent > 100 || isNaN(maxCap) || maxCap < 0) {
+            alert('Please enter valid min spend, discount percentage (1-100), and max cap.');
+            return;
+          }
+          if (postCoinsBase >= minSpend) {
+            voucherAmount = Math.min(postCoinsBase * (percent / 100), maxCap, postCoinsBase);
+            voucherLabel = 'Voucher Discount (' + percent.toFixed(2) + '%)';
+          } else {
+            voucherAmount = 0;
+            voucherLabel = 'Voucher Discount (min spend not met)';
+          }
+        }
+      }
+
+      const netBase = postCoinsBase - voucherAmount;
+      if (netBase <= 0) {
+        alert('Total discounts cannot be equal to or greater than the selling price.');
+        return;
+      }
+      const fee = netBase * rate;
+      const paymentFee = netBase * 0.0278;
+      const profit = netBase - fee - paymentFee;
+
+      document.getElementById('resSubtotal').textContent = formatMoney(netBase);
+      document.getElementById('resRate').textContent = formatPercent(rate);
+      document.getElementById('resFee').textContent = formatMoney(fee);
+      document.getElementById('resPaymentFee').textContent = formatMoney(paymentFee);
+      document.getElementById('resProfit').textContent = formatMoney(profit);
+
+      if (hasPrice) {
+        document.getElementById('resPrice').textContent = formatMoney(price);
+        rowPrice.style.display = 'flex';
+        rowCampaign.style.display = 'none';
+        rowDiscount.style.display = 'none';
+      } else {
+        document.getElementById('resCampaignPrice').textContent = formatMoney(campaignPrice);
+        rowPrice.style.display = 'none';
+        rowCampaign.style.display = 'flex';
+        rowDiscount.style.display = 'none';
+      }
+
+      if (voucherEnabled) {
+        document.getElementById('resVoucherLabel').textContent = voucherLabel;
+        document.getElementById('resVoucher').textContent = formatMoney(voucherAmount);
+        rowVoucher.style.display = 'flex';
+      } else {
+        rowVoucher.style.display = 'none';
+      }
+
+      if (coinsEnabled) {
+        document.getElementById('resCoins').textContent = formatMoney(coinsAmount) + ' (' + coinsPercent.toFixed(2) + '%)';
+        rowCoins.style.display = 'flex';
+      } else {
+        rowCoins.style.display = 'none';
+      }
+
+      results.classList.add('show');
+    });
+  </script>
+</body>
+</html>
