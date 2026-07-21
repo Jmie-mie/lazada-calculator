@@ -309,6 +309,7 @@
     <select id="sellerType">
       <option value="mp">Marketplace</option>
       <option value="mall">Mall</option>
+      <option value="new">New seller</option>
     </select>
 
     <label for="priceType">Price Type</label>
@@ -370,7 +371,7 @@
       </div>
     </div>
 
-    <div class="hint">Lazada payment fee: 2.78% will be deducted after commission.</div>
+    <div class="hint">Lazada payment fee: 3.78% will be deducted after commission.</div>
 
     <button id="calculate">Calculate</button>
 
@@ -408,7 +409,7 @@
         <span class="result-value fee" id="resFee"></span>
       </div>
       <div class="result-row">
-        <span class="result-label">Payment Fee (2.78%)</span>
+        <span class="result-label">Payment Fee (3.78%)</span>
         <span class="result-value fee" id="resPaymentFee"></span>
       </div>
       <div class="result-row profit-row">
@@ -653,7 +654,14 @@
         return;
       }
 
-      const rate = sellerType === 'mall' ? item.mallSst : item.mpSst;
+      let rate;
+      if (sellerType === 'new') {
+        rate = 0;
+      } else if (sellerType === 'mall') {
+        rate = item.mallSst;
+      } else {
+        rate = item.mpSst;
+      }
       const commissionBase = campaignPrice !== null ? campaignPrice : price;
 
       const coinsAmount = coinsEnabled ? commissionBase * (coinsPercent / 100) : 0;
@@ -709,7 +717,7 @@
         return;
       }
       const fee = netBase * rate;
-      const paymentFee = netBase * 0.0278;
+      const paymentFee = netBase * 0.0378;
       const profit = netBase - fee - paymentFee;
 
       document.getElementById('resSubtotal').textContent = formatMoney(netBase);
