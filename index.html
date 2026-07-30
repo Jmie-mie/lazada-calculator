@@ -45,7 +45,7 @@
       border-radius: 4px;
       color: #222;
     }
-    select, input[type="number"], .category-trigger {
+    select, input[type="number"] {
       width: 100%;
       padding: 12px 14px;
       font-size: 16px;
@@ -68,7 +68,7 @@
       font-weight: 600;
       pointer-events: none;
     }
-    select:focus, input:focus, .category-trigger:focus {
+    select:focus, input:focus {
       outline: none;
       border-color: #8fa9c1;
       background: #fff;
@@ -77,29 +77,6 @@
       background: #eee;
       color: #999;
       cursor: not-allowed;
-    }
-    .category-trigger {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      min-height: 46px;
-      -webkit-appearance: none;
-      appearance: none;
-      text-align: left;
-      font-family: inherit;
-      color: #222;
-      font-weight: 400;
-    }
-    .category-trigger::-moz-focus-inner { border: 0; padding: 0; }
-    .category-trigger::after {
-      content: "\25BC";
-      font-size: 11px;
-      color: #888;
-      margin-left: 8px;
-    }
-    .category-trigger.placeholder {
-      color: #777;
     }
     button {
       width: 100%;
@@ -204,80 +181,6 @@
       height: 18px;
       accent-color: #f85606;
     }
-
-    .category-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      height: -webkit-fill-available;
-      background: #fff;
-      z-index: 1000;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .category-overlay.show { display: flex; }
-    body.overlay-open {
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-      height: 100%;
-    }
-    .category-overlay-header {
-      padding: 16px;
-      border-bottom: 1px solid #eee;
-      background: #fafafa;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .category-overlay-header input {
-      flex: 1;
-      padding: 12px 14px;
-      font-size: 16px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    .category-overlay-header button {
-      width: auto;
-      margin: 0;
-      padding: 12px 16px;
-      background: #0f146d;
-    }
-    .category-list {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-      padding: 8px 0;
-      touch-action: pan-y;
-    }
-    .category-item {
-      padding: 14px 16px;
-      font-size: 16px;
-      border-bottom: 1px solid #f0f0f0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      touch-action: manipulation;
-    }
-    .category-item:active { background: #f5f5f5; }
-    .category-item.selected { background: #fff0e6; color: #f85606; font-weight: 600; }
-    .category-item.selected::after {
-      content: "\2713";
-      font-weight: 700;
-    }
-    .category-empty {
-      padding: 24px 16px;
-      text-align: center;
-      color: #888;
-      font-size: 14px;
-    }
   </style>
 </head>
 <body>
@@ -301,9 +204,10 @@
       <option value="DG">Digital Goods (DG)</option>
     </select>
 
-    <label>Category</label>
-    <button type="button" class="category-trigger placeholder" id="categoryTrigger" onclick="openCategoryOverlay()">-- Select a cluster first --</button>
-    <input type="hidden" id="category" value="">
+    <label for="category">Category</label>
+    <select id="category" disabled>
+      <option value="">-- Select a cluster first --</option>
+    </select>
     <div class="hint" id="categoryHint"></div>
 
     <label for="sellerType">Seller Type</label>
@@ -430,25 +334,12 @@
     </div>
   </div>
 
-  <div class="category-overlay" id="categoryOverlay">
-    <div class="category-overlay-header">
-      <input type="text" id="categoryOverlayFilter" placeholder="Search category..." autocomplete="off">
-      <button id="categoryOverlayClose">Done</button>
-    </div>
-    <div class="category-list" id="categoryList"></div>
-  </div>
-
   <script>
     const commissionData = /*COMMISSION_DATA*/;
 
     const clusterSelect = document.getElementById('cluster');
-    const categoryInput = document.getElementById('category');
-    const categoryTrigger = document.getElementById('categoryTrigger');
+    const categorySelect = document.getElementById('category');
     const categoryHint = document.getElementById('categoryHint');
-    const categoryOverlay = document.getElementById('categoryOverlay');
-    const categoryOverlayFilter = document.getElementById('categoryOverlayFilter');
-    const categoryOverlayClose = document.getElementById('categoryOverlayClose');
-    const categoryList = document.getElementById('categoryList');
     const sellerTypeSelect = document.getElementById('sellerType');
     const priceTypeSelect = document.getElementById('priceType');
     const priceInput = document.getElementById('price');
@@ -486,60 +377,25 @@
       return (rate * 100).toFixed(2) + '%';
     }
 
-    function renderCategoryList(categories, keyword) {
-      categoryList.innerHTML = '';
-      if (categories.length === 0) {
-        categoryList.innerHTML = '<div class="category-empty">No categories match your search</div>';
-        return;
-      }
+    function populateCategorySelect(categories) {
+      categorySelect.innerHTML = '<option value="">-- Select category --</option>';
       categories.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'category-item';
-        if (item.category === categoryInput.value) {
-          div.classList.add('selected');
-        }
-        div.textContent = item.category;
-        div.addEventListener('click', function() {
-          selectCategory(item.category);
-        });
-        categoryList.appendChild(div);
+        const opt = document.createElement('option');
+        opt.value = item.category;
+        opt.textContent = item.category;
+        categorySelect.appendChild(opt);
       });
-    }
-
-    function selectCategory(categoryName) {
-      categoryInput.value = categoryName;
-      categoryTrigger.textContent = categoryName;
-      categoryTrigger.classList.remove('placeholder');
-      closeCategoryOverlay();
-      renderCategoryList(currentCategories, categoryOverlayFilter.value.trim().toLowerCase());
-    }
-
-    function openCategoryOverlay() {
-      if (!clusterSelect.value) {
-        alert('Please select a Product Cluster first.');
-        return;
-      }
-      document.body.classList.add('overlay-open');
-      categoryOverlay.classList.add('show');
-      categoryOverlayFilter.value = '';
-      renderCategoryList(currentCategories, '');
-    }
-
-    function closeCategoryOverlay() {
-      document.body.classList.remove('overlay-open');
-      categoryOverlay.classList.remove('show');
     }
 
     clusterSelect.addEventListener('change', function() {
       const cluster = this.value;
       results.classList.remove('show');
-      categoryInput.value = '';
-      categoryTrigger.textContent = '-- Select category --';
-      categoryTrigger.classList.add('placeholder');
+      categorySelect.value = '';
 
       if (!cluster) {
         currentCategories = [];
-        categoryTrigger.textContent = '-- Select a cluster first --';
+        categorySelect.innerHTML = '<option value="">-- Select a cluster first --</option>';
+        categorySelect.disabled = true;
         categoryHint.textContent = '';
         return;
       }
@@ -548,26 +404,9 @@
         .filter(item => item.cluster === cluster)
         .sort((a, b) => a.category.localeCompare(b.category));
 
-      categoryTrigger.textContent = '-- Select category --';
+      categorySelect.disabled = false;
+      populateCategorySelect(currentCategories);
       categoryHint.textContent = currentCategories.length + ' categories available';
-    });
-
-    categoryTrigger.addEventListener('click', openCategoryOverlay);
-    categoryTrigger.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openCategoryOverlay();
-      }
-    });
-
-    categoryOverlayClose.addEventListener('click', closeCategoryOverlay);
-
-    categoryOverlayFilter.addEventListener('input', function() {
-      const keyword = this.value.trim().toLowerCase();
-      const filtered = currentCategories.filter(item =>
-        item.category.toLowerCase().includes(keyword)
-      );
-      renderCategoryList(filtered, keyword);
     });
 
     coinsEnabledInput.addEventListener('change', function() {
@@ -619,7 +458,7 @@
 
     calculateBtn.addEventListener('click', function() {
       const cluster = clusterSelect.value;
-      const categoryName = categoryInput.value;
+      const categoryName = categorySelect.value;
       const sellerType = sellerTypeSelect.value;
       const isSalesPrice = priceTypeSelect.value === 'sales';
       const priceRaw = isSalesPrice ? priceInput.value.trim() : campaignInput.value.trim();
