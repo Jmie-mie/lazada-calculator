@@ -47,13 +47,41 @@
       border-radius: 4px;
       color: #222;
     }
-    select, input[type="number"] {
+    select, input[type="number"], #category {
       width: 100%;
       padding: 12px 14px;
       font-size: 16px;
       border: 1px solid #ddd;
       border-radius: 8px;
       background: #fafafa;
+    }
+    .category-wrap {
+      position: relative;
+    }
+    .category-wrap::after {
+      content: "\25BC";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      color: #666;
+      pointer-events: none;
+    }
+    #category {
+      padding-right: 36px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    #category:disabled {
+      background: #eee;
+      color: #999;
+      cursor: not-allowed;
+    }
+    #category:disabled + .category-arrow,
+    .category-wrap.disabled::after {
+      color: #bbb;
     }
     .input-suffix-wrap {
       position: relative;
@@ -207,7 +235,9 @@
     </select>
 
     <label for="category">Category</label>
-    <input type="text" id="category" list="categoryList" placeholder="-- Select a cluster first --" disabled autocomplete="off">
+    <div class="category-wrap">
+      <input type="text" id="category" list="categoryList" placeholder="-- Select a cluster first --" disabled autocomplete="off">
+    </div>
     <datalist id="categoryList"></datalist>
     <input type="hidden" id="categoryValue" value="">
     <div class="hint" id="categoryHint"></div>
@@ -372,6 +402,7 @@
     const rowVoucher = document.getElementById('rowVoucher');
     const rowCoins = document.getElementById('rowCoins');
 
+    const categoryWrap = categoryInput.parentElement;
     let currentCategories = [];
 
     function formatMoney(amount) {
@@ -407,6 +438,7 @@
         currentCategories = [];
         categoryInput.placeholder = '-- Select a cluster first --';
         categoryInput.disabled = true;
+        categoryWrap.classList.add('disabled');
         categoryList.innerHTML = '';
         categoryHint.textContent = '';
         return;
@@ -417,6 +449,7 @@
         .sort((a, b) => a.category.localeCompare(b.category));
 
       categoryInput.disabled = false;
+      categoryWrap.classList.remove('disabled');
       categoryInput.placeholder = '-- Select or type to search category --';
       populateCategoryDatalist(currentCategories);
       categoryHint.textContent = currentCategories.length + ' categories available';
